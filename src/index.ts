@@ -1,8 +1,8 @@
+import 'dotenv/config.js';
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import 'dotenv/config.js';
-import { getJLPPosition, subscribeDriftClient } from "./drift.js";
+import { getHedgePerpsPositions, getJLPPosition, subscribeDriftClient } from "./drift.js";
 
 const server = new McpServer({
   name: "Drift MCP service",
@@ -18,6 +18,16 @@ server.tool(
   async ({}) => {
     const positions = await getJLPPosition() 
     return { content: [{ type: "text", text: JSON.stringify(positions) }] }
+  },
+);
+
+server.tool(
+  "getHedgePositions",
+  "Get hedge positions from Drift",
+  {},
+  async ({}) => {
+    const hedgePositions = await getHedgePerpsPositions() 
+    return { content: [{ type: "text", text: JSON.stringify(hedgePositions) }] }
   },
 );
 
