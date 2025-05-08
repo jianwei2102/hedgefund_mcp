@@ -3,17 +3,8 @@ import { Connection } from "@solana/web3.js"
 import { DriftClient } from "@drift-labs/sdk"
 import { Wallet, loadKeypair } from "@drift-labs/sdk"
 import { JLPPosition } from "./types.js"
-import path from "path"
-import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 dotenv.config();
-
-const RPC_CONNECTION = "https://api.devnet.solana.com";
-
-// Get the directory name in ES module scope
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
-// const keyPairFile = path.join(__dirname, "../drift-keypair.json");
 
 let driftClientInstance: DriftClient | null = null;
 
@@ -27,23 +18,22 @@ export async function getDriftClient(): Promise<DriftClient> {
 export async function subscribeDriftClient(): Promise<DriftClient> {
   const WALLET_PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY
   if (!WALLET_PRIVATE_KEY) { throw new Error("WALLET_PRIVATE_KEY environment variable is not set") }
+  const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL
+  if (!SOLANA_RPC_URL) { throw new Error("SOLANA_RPC_URL environment variable is not set") }
 
-  const connection = new Connection(RPC_CONNECTION, "confirmed")
+  const connection = new Connection(SOLANA_RPC_URL , "confirmed")
   const wallet =  new Wallet(loadKeypair(WALLET_PRIVATE_KEY))
   const driftClient = new DriftClient({
     connection,
     wallet,
-    env: 'devnet',
+    env: 'mainnet-beta',
   })
   await driftClient.subscribe()
   return driftClient
 }
 
 export async function getJLPPosition(): Promise<JLPPosition> {
-  console.log("Getting JLP position")
   const driftClient = await getDriftClient()
-  console.log({driftClient})
-  console.log(driftClient.getUser())
   const jlpSpotMarketIndex = 5
   const pos = driftClient.getUser().getSpotPosition(jlpSpotMarketIndex)
   if (!pos) {
