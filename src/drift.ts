@@ -1,7 +1,6 @@
-
 import { Connection } from "@solana/web3.js"
-import { DriftClient } from "@drift-labs/sdk"
-import { Wallet, loadKeypair } from "@drift-labs/sdk"
+import { DriftClient, BN } from "@drift-labs/sdk"
+import { Wallet, loadKeypair, convertToNumber } from "@drift-labs/sdk"
 import { JLPPosition } from "./types.js"
 import dotenv from "dotenv";
 dotenv.config();
@@ -34,7 +33,8 @@ export async function subscribeDriftClient(): Promise<DriftClient> {
 
 export async function getJLPPosition(): Promise<JLPPosition> {
   const driftClient = await getDriftClient()
-  const jlpSpotMarketIndex = 5
+  const jlpSpotMarketIndex = 19
+  const jlpPrecision = new BN(1e6)
   const pos = driftClient.getUser().getSpotPosition(jlpSpotMarketIndex)
   if (!pos) {
     return {
@@ -43,11 +43,18 @@ export async function getJLPPosition(): Promise<JLPPosition> {
     }
   }
 
-  const amount = pos.scaledBalance.toNumber() / 1e9 // Drift uses 1e9 base units??? To confirm
-  const jlpPrice = driftClient.getSpotMarketAccount(jlpSpotMarketIndex)?.lastTwapTs.toNumber()
+  const amount = pos.scaledBalance.toNumber() / 1e9 // Drift uses 1e9 base units
+  const spotPrice = driftClient.getSpotMarketAccount(jlpSpotMarketIndex)?.historicalIndexData.lastIndexBidPrice
+  // const usdcPrice = driftClient.getSpotMarketAccount(0)?.historicalIndexData.lastIndexBidPrice
+  // const solanaPrice = driftClient.getSpotMarketAccount(1)?.historicalIndexData.lastIndexBidPrice
+  // const usdcPriceConverted = convertToNumber(usdcPrice, new BN(1e6))
+  // const solanaPriceConverted = convertToNumber(solanaPrice, new BN(1e6))
+  // console.log({ usdcPriceConverted, solanaPriceConverted })
+  const spotPriceConverted = convertToNumber(spotPrice, jlpPrecision)
+  console.log({spotPriceConverted}) // JLP price is wrong
 
   return{
     amount,
-    usdValue: amount * jlpPrice
+    usdValue: amount * spotPriceConverted
   }
 }
