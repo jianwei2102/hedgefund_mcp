@@ -1,3 +1,4 @@
+import { botManager, BotType } from "./bot.js";
 import { depositJLPToken, subscribeDriftClient } from "./drift.js";
 import { getHedgePerpsPositions } from "./hedge.js";
 import {
@@ -78,8 +79,47 @@ export async function getHedgePositions() {
     throw error;
   }
 }
+
+export async function startNewBot() {
+  try {
+    const bot = await botManager.createBot({
+      type: BotType.JLP_HEDGE,
+      intervalHours: 1,
+      minRebalanceThreshold: 5,
+    });
+    console.log("New bot created successfully:", bot);
+  } catch (error) {
+    console.error("Failed to create new bot:", error);
+    throw error;
+  }
+}
+
+export async function listBots() {
+  try {
+    const bots = botManager.listBots();
+    console.log("List of bots:", bots);
+  } catch (error) {
+    console.error("Failed to list bots:", error);
+    throw error;
+  }
+}
+
+export async function start() {
+  try {
+    await botManager.monitorBots();
+    console.log("Bot monitoring started successfully");
+  } catch (error) {
+    console.error("Failed to monitor", error);
+    throw error;
+  }
+}
+
+// export async function start() {
+
 // Call the function
-getHedgePositions().catch(console.error);
+startNewBot().catch(console.error);
+listBots().catch(console.error);
+start().catch(console.error);
 // accountPortfolio().catch(console.error);
 // placePerpOrder().catch(console.error);
 
