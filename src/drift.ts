@@ -34,3 +34,38 @@ export async function subscribeDriftClient(): Promise<DriftClient> {
   await driftClient.subscribe();
   return driftClient;
 }
+
+export async function depositJLPToken(): Promise<any> {
+  try {
+    const driftClient = await getDriftClient();
+    const marketIndex = 19; // JLP
+    const amount = driftClient.convertToSpotPrecision(marketIndex, 0.1); // 0.1 JLP
+    const associatedTokenAccount = await driftClient.getAssociatedTokenAccount(
+      marketIndex
+    );
+
+    const txSig = await driftClient.deposit(
+      amount,
+      marketIndex,
+      associatedTokenAccount
+    );
+    console.log(`Deposit transaction sent: ${txSig}`);
+
+    const confirmation = await driftClient.connection.confirmTransaction(
+      txSig,
+      "confirmed"
+    );
+    if (confirmation.value.err) {
+      throw new Error(
+        `Deposit failed: ${JSON.stringify(
+          confirmation.value.err
+        )}\nhttps://solscan.io/tx/${txSig}/`
+      );
+    }
+    console.log(`Deposit successful: https://solscan.io/tx/${txSig}/`);
+    return txSig;
+  } catch (error) {
+    console.error("Error during JLP deposit:", error);
+    throw error;
+  }
+}

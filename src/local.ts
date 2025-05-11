@@ -1,8 +1,9 @@
-import { subscribeDriftClient } from "./drift.js";
+import { depositJLPToken, subscribeDriftClient } from "./drift.js";
+import { getHedgePerpsPositions } from "./hedge.js";
 import {
   placePerpMarketOrder,
   placeSpotMarketOrder,
-  swapAllToJLP as swapToJLP,
+  swapTokenToJLP,
 } from "./order.js";
 import { getAccountPortfolio, getJLPPosition } from "./portfolio.js";
 
@@ -19,7 +20,7 @@ export async function initializeDrift() {
 
 export async function placePerpOrder() {
   try {
-    const order = await placePerpMarketOrder(0, "short", 0.02);
+    const order = await placePerpMarketOrder(0, "short", 0.01);
     console.log("Order placed successfully:", order);
     // return order;
   } catch (error) {
@@ -50,7 +51,7 @@ export async function accountPortfolio() {
 
 export async function swapAllToJLP() {
   try {
-    await swapToJLP();
+    await swapTokenToJLP();
     console.log("Swapped all to JLP successfully");
   } catch (error) {
     console.error("Failed to swap to JLP:", error);
@@ -58,7 +59,28 @@ export async function swapAllToJLP() {
   }
 }
 
+export async function depositJLP() {
+  try {
+    await depositJLPToken();
+    console.log("Deposited JLP token successfully");
+  } catch (error) {
+    console.error("Failed to deposit JLP token:", error);
+    throw error;
+  }
+}
+
+export async function getHedgePositions() {
+  try {
+    const hedgePositions = await getHedgePerpsPositions();
+    console.log("Hedge positions retrieved successfully:", hedgePositions);
+  } catch (error) {
+    console.error("Failed to get hedge positions:", error);
+    throw error;
+  }
+}
 // Call the function
-placePerpOrder().catch(console.error);
+getHedgePositions().catch(console.error);
+// accountPortfolio().catch(console.error);
+// placePerpOrder().catch(console.error);
 
 // You can add more functions here later
