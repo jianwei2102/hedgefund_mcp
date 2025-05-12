@@ -1,4 +1,5 @@
 import { JLPHedgeBot } from "./jlp-bot.js";
+import { storageService } from "./storage.js";
 
 // Bot status enum
 export enum BotStatus {
@@ -35,13 +36,40 @@ export interface createBotOpts {
 // Bot manager class to handle all bot operations
 export class BotManager {
   private bots: Map<string, Bot>;
+  private botInstances: Map<string, any>;
+  private isInitialized: boolean = false;
 
   constructor() {
     this.bots = new Map();
+    this.botInstances = new Map();
+  }
+
+  async initialize(): Promise<void> {
+    if (this.isInitialized) return;
+
+    await storageService.initialize();
+    const savedBots = await storageService.loadBots();
+
+    for (const bot of savedBots) {
+      this.bots.set(bot.id, bot);
+      if (bot.type === BotType.JLP_HEDGE) {
+        this.botInstances.set(bot.id, new JLPHedgeBot(bot));
+      }
+    }
+    console.log("Bots initialized:", this.bots);
+    this.isInitialized = true;
+  }
+
+  private async saveBots(): Promise<void> {
+    await storageService.saveBots(this.listBots());
   }
 
   // Create a new bot
   async createBot(opts: createBotOpts): Promise<Bot> {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
     console.log("Creating bot with options:", opts);
     const id = `bot_${Date.now()}`;
 
@@ -63,8 +91,14 @@ export class BotManager {
       status: BotStatus.RUNNING,
     };
 
+    // Initialize the bot instance
+    if (bot.type === BotType.JLP_HEDGE) {
+      this.botInstances.set(bot.id, new JLPHedgeBot(bot));
+    }
+
     console.log("Bot created successfully:", bot);
     this.bots.set(id, bot);
+    await this.saveBots();
     this.monitorBots();
 
     return bot;
@@ -77,6 +111,10 @@ export class BotManager {
 
   // Monitor bots and execute their actions if the interval has passed
   async monitorBots(): Promise<void> {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
     console.log("Starting bot loop...");
     setInterval(async () => {
       const bots = this.listBots();
@@ -91,16 +129,26 @@ export class BotManager {
         ) {
           try {
             console.log(`Executing bot ${bot.id}...`);
-            let botInstance;
-            if (bot.type === BotType.JLP_HEDGE) {
-              botInstance = new JLPHedgeBot(bot);
+            const botInstance = this.botInstances.get(bot.id);
+            if (!botInstance) {
+              console.log(
+                `No bot instance found for bot ${bot.id}, initiating new instance`
+              );
+              if (bot.type === BotType.JLP_HEDGE) {
+                const newInstance = new JLPHedgeBot(bot);
+                this.botInstances.set(bot.id, newInstance);
+                await newInstance.execute();
+              }
             } else {
-              throw new Error(`Unknown bot type: ${bot.type}`);
+              await botInstance.execute();
             }
-            await botInstance.execute();
             bot.lastRunTime = new Date();
+            await this.saveBots();
           } catch (error) {
             console.error(`Error executing bot ${bot.id}:`, error);
+            bot.status = BotStatus.ERROR;
+            bot.error = error instanceof Error ? error.message : String(error);
+            await this.saveBots();
           }
         }
       }

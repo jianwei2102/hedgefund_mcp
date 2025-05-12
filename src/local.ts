@@ -106,6 +106,8 @@ export async function listBots() {
 
 export async function start() {
   try {
+    // Then initialize and start the bot manager
+    await botManager.initialize(); // will initiali
     await botManager.monitorBots();
     console.log("Bot monitoring started successfully");
   } catch (error) {

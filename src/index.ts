@@ -63,7 +63,7 @@ server.tool(
   "createNewBot",
   "Create a new Hedging bot",
   {
-    type: z.string().describe("Type of bot to create"),
+    type: z.enum(["JLP", "TRUMP"]).describe("Type of bot to create"),
     intervalHours: z
       .number()
       .min(1)
