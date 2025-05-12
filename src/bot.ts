@@ -1,5 +1,6 @@
 import { JLPHedgeBot } from "./jlp-bot.js";
 import { storageService } from "./storage.js";
+import { sendTelegramMessage } from "./telegram.js";
 
 // Bot status enum
 export enum BotStatus {
@@ -38,6 +39,7 @@ export class BotManager {
   private bots: Map<string, Bot>;
   private botInstances: Map<string, any>;
   private isInitialized: boolean = false;
+  private monitorInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     this.bots = new Map();
@@ -99,8 +101,9 @@ export class BotManager {
     console.log("Bot created successfully:", bot);
     this.bots.set(id, bot);
     await this.saveBots();
-    this.monitorBots();
 
+    // Restart monitoring to include the new bot
+    this.restartMonitoring();
     return bot;
   }
 
@@ -110,18 +113,21 @@ export class BotManager {
   }
 
   // Monitor bots and execute their actions if the interval has passed
-  async monitorBots(): Promise<void> {
+  monitorBots(): void {
     if (!this.isInitialized) {
-      await this.initialize();
+      this.initialize();
+      console.log("BotManager initialized");
+      sendTelegramMessage("🤖 BotManager initialized");
     }
 
-    console.log("Starting bot loop...");
-    setInterval(async () => {
+    console.log("Starting bot monitoring loop...");
+    this.monitorInterval = setInterval(async () => {
       const bots = this.listBots();
       const now = new Date();
 
       for (const bot of bots) {
         console.log(`Checking bot ${bot.id}...`);
+        sendTelegramMessage(`🔍 Checking bot ${bot.id} of type ${bot.type}...`);
         if (
           bot.lastRunTime === undefined ||
           now.getTime() - bot.lastRunTime.getTime() >=
@@ -129,30 +135,52 @@ export class BotManager {
         ) {
           try {
             console.log(`Executing bot ${bot.id}...`);
+            sendTelegramMessage(`⚙️ Executing bot ${bot.id}...`);
             const botInstance = this.botInstances.get(bot.id);
             if (!botInstance) {
               console.log(
                 `No bot instance found for bot ${bot.id}, initiating new instance`
               );
-              if (bot.type === BotType.JLP_HEDGE) {
-                const newInstance = new JLPHedgeBot(bot);
-                this.botInstances.set(bot.id, newInstance);
-                await newInstance.execute();
-              }
+              sendTelegramMessage(
+                `🆕 No instance found for bot ${bot.id}. Creating a new instance.`
+              );
+
+              // Create as JLPHedgeBot instance for now TODO: Add other bot types
+              const newInstance = new JLPHedgeBot(bot);
+              this.botInstances.set(bot.id, newInstance);
+              await newInstance.execute();
             } else {
               await botInstance.execute();
             }
             bot.lastRunTime = new Date();
+            sendTelegramMessage(
+              `✅ Bot ${
+                bot.id
+              } executed successfully at ${bot.lastRunTime.toISOString()}.`
+            );
             await this.saveBots();
           } catch (error) {
             console.error(`Error executing bot ${bot.id}:`, error);
             bot.status = BotStatus.ERROR;
             bot.error = error instanceof Error ? error.message : String(error);
+            sendTelegramMessage(
+              `❌ Error executing bot ${bot.id}: ${bot.error}`
+            );
             await this.saveBots();
           }
         }
       }
-    }, 60 * 1000); // Run every 1 minute
+    }, 60 * 1000); // Check every minute
+  }
+
+  private restartMonitoring(): void {
+    // Clear existing interval if any
+    if (this.monitorInterval) {
+      clearInterval(this.monitorInterval);
+      this.monitorInterval = null;
+    }
+    // Start new monitoring
+    this.monitorBots();
   }
 }
 

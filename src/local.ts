@@ -7,6 +7,7 @@ import {
   swapTokenToJLP,
 } from "./order.js";
 import { getAccountPortfolio, getJLPPosition } from "./portfolio.js";
+import { sendTelegramMessage } from "./telegram.js";
 
 export async function initializeDrift() {
   try {
@@ -107,11 +108,20 @@ export async function listBots() {
 export async function start() {
   try {
     // Then initialize and start the bot manager
-    await botManager.initialize(); // will initiali
-    await botManager.monitorBots();
-    console.log("Bot monitoring started successfully");
+    await botManager.initialize(); // will initialize the storage
+    console.log("Bot manager started successfully");
   } catch (error) {
     console.error("Failed to monitor", error);
+    throw error;
+  }
+}
+
+export async function sendingMessage() {
+  try {
+    const message = await sendTelegramMessage("Hello, world!");
+    console.log("Message sent successfully:", message);
+  } catch (error) {
+    console.error("Failed to send message:", error);
     throw error;
   }
 }
@@ -119,9 +129,11 @@ export async function start() {
 // export async function start() {
 
 // Call the function
-startNewBot().catch(console.error);
-listBots().catch(console.error);
-start().catch(console.error);
+// startNewBot().catch(console.error);
+// listBots().catch(console.error);
+// start().catch(console.error);
+
+sendingMessage().catch(console.error);
 // accountPortfolio().catch(console.error);
 // placePerpOrder().catch(console.error);
 

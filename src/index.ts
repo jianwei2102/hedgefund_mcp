@@ -10,6 +10,7 @@ import {
 import { getAccountPortfolio, getJLPPosition } from "./portfolio.js";
 import { z } from "zod";
 import { botManager, BotType } from "./bot.js";
+import { sendTelegramMessage } from "./telegram.js";
 
 const server = new McpServer({
   name: "Drift MCP service",
@@ -106,8 +107,28 @@ server.tool("listBots", "List all bots", {}, async ({}) => {
   };
 });
 
+server.tool("sendTGMessage", "Send a message to Telegram", {}, async ({}) => {
+  const messages = [
+    "🚀 New trading opportunity spotted!",
+    "📈 Market is looking bullish today!",
+    "💎 Diamond hands holding strong!",
+    "🔥 Hot trading action incoming!",
+    "⚡ Quick market update: Things are heating up!",
+  ];
+  const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+  await sendTelegramMessage(randomMessage);
+  return {
+    content: [
+      {
+        type: "text",
+        text: `Sent message to Telegram: ${randomMessage}`,
+      },
+    ],
+  };
+});
+
 const transport = new StdioServerTransport();
-botManager.monitorBots;
+botManager.monitorBots();
 server.connect(transport);
 
 // server.tool("placeSpotOrder", "Place a spot order on Drift", {}, async ({}) => {
