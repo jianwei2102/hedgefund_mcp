@@ -7,53 +7,7 @@ import {
   MainnetPerpMarkets,
   loadKeypair,
 } from "@drift-labs/sdk";
-import { MainnetSpotMarkets } from "@drift-labs/sdk";
 import { VersionedTransaction, Connection } from "@solana/web3.js";
-
-export const min_size = {
-  SOL: 0.01,
-  ETH: 0.001,
-  BTC: 0.0001,
-};
-
-// Swap all usdc & sol to jlp
-export async function placeSpotMarketOrder(
-  marketIndex: number,
-  direction: "buy" | "sell",
-  size: number
-) {
-  const driftClient = await getDriftClient();
-
-  // Get the market info
-  const market = MainnetSpotMarkets.find((m) => m.marketIndex === marketIndex);
-  if (!market) {
-    throw new Error(`Market index ${marketIndex} not found`);
-  }
-
-  // Convert size to proper precision
-  const sizeBN = new BN(size * 1e9); // Convert to base units (1e9 precision)
-
-  try {
-    // Create the order
-    const order = await driftClient.placeSpotOrder({
-      marketIndex,
-      direction: direction === "buy" ? "buy" : "sell",
-      baseAssetAmount: sizeBN,
-      price: new BN(0), // Market order
-      orderType: "market",
-      reduceOnly: false,
-    });
-
-    console.log(`Placed ${direction} order for ${size} ${market.symbol}`);
-    return order;
-  } catch (error) {
-    console.error(
-      `Error placing ${direction} order for ${market.symbol}:`,
-      error
-    );
-    throw error;
-  }
-}
 
 // Helper function to swap all USDC and SOL to JLP
 export async function swapTokenToJLP() {
@@ -157,17 +111,17 @@ export async function placePerpMarketOrder(
   try {
     const tx = await driftClient.placePerpOrder(orderParams);
     console.log(`Market order placed. Transaction: ${tx}`);
+    return {
+      orderType: orderParams.orderType,
+      marketIndex: orderParams.marketIndex,
+      direction: orderParams.direction,
+      baseAssetAmount: orderParams.baseAssetAmount.toString(),
+      txId: tx,
+    };
   } catch (error: any) {
     console.error(`Error placing market order: ${error.message}`);
     return {
       error: error.message,
     };
   }
-
-  return {
-    orderType: orderParams.orderType,
-    marketIndex: orderParams.marketIndex,
-    direction: orderParams.direction,
-    baseAssetAmount: orderParams.baseAssetAmount.toString(),
-  };
 }

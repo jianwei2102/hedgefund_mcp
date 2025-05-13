@@ -1,11 +1,7 @@
 import { botManager, BotType } from "./bot.js";
 import { depositJLPToken, subscribeDriftClient } from "./drift.js";
 import { getHedgePerpsPositions } from "./hedge.js";
-import {
-  placePerpMarketOrder,
-  placeSpotMarketOrder,
-  swapTokenToJLP,
-} from "./order.js";
+import { placePerpMarketOrder, swapTokenToJLP } from "./order.js";
 import { getAccountPortfolio, getJLPPosition } from "./portfolio.js";
 import { sendTelegramMessage } from "./telegram.js";
 
@@ -130,10 +126,13 @@ export async function sendingMessage() {
 
 // Call the function
 // startNewBot().catch(console.error);
-// listBots().catch(console.error);
+botManager.monitorBots();
+
+listBots().catch(console.error);
+
 // start().catch(console.error);
 
-sendingMessage().catch(console.error);
+// sendingMessage().catch(console.error);
 // accountPortfolio().catch(console.error);
 // placePerpOrder().catch(console.error);
 

@@ -95,15 +95,15 @@ export class BotManager {
 
     // Initialize the bot instance
     if (bot.type === BotType.JLP_HEDGE) {
-      this.botInstances.set(bot.id, new JLPHedgeBot(bot));
+      const jlpHedgeBot = new JLPHedgeBot(bot);
+      this.botInstances.set(bot.id, jlpHedgeBot);
+      jlpHedgeBot.execute();
     }
 
     console.log("Bot created successfully:", bot);
     this.bots.set(id, bot);
     await this.saveBots();
 
-    // Restart monitoring to include the new bot
-    this.restartMonitoring();
     return bot;
   }
 
@@ -114,14 +114,12 @@ export class BotManager {
 
   // Monitor bots and execute their actions if the interval has passed
   monitorBots(): void {
-    if (!this.isInitialized) {
-      this.initialize();
-      console.log("BotManager initialized");
-      sendTelegramMessage("🤖 BotManager initialized");
+    if (this.monitorInterval) {
+      console.log("Monitoring is already running.");
+      return;
     }
 
-    console.log("Starting bot monitoring loop...");
-    this.monitorInterval = setInterval(async () => {
+    const checkBotsNow = async () => {
       const bots = this.listBots();
       const now = new Date();
 
@@ -161,6 +159,7 @@ export class BotManager {
             await this.saveBots();
           } catch (error) {
             console.error(`Error executing bot ${bot.id}:`, error);
+            bot.lastRunTime = undefined;
             bot.status = BotStatus.ERROR;
             bot.error = error instanceof Error ? error.message : String(error);
             sendTelegramMessage(
@@ -170,17 +169,19 @@ export class BotManager {
           }
         }
       }
-    }, 60 * 1000); // Check every minute
-  }
+    };
 
-  private restartMonitoring(): void {
-    // Clear existing interval if any
-    if (this.monitorInterval) {
-      clearInterval(this.monitorInterval);
-      this.monitorInterval = null;
-    }
-    // Start new monitoring
-    this.monitorBots();
+    const startMonitoring = async () => {
+      if (!this.isInitialized) {
+        await this.initialize();
+        console.log("BotManager initialized");
+      }
+      await checkBotsNow();
+      // Then run every hour
+      this.monitorInterval = setInterval(checkBotsNow, 60 * 60 * 1000);
+    };
+
+    startMonitoring();
   }
 }
 

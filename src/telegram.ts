@@ -3,6 +3,7 @@ export async function sendTelegramMessage(message: any) {
   const payload = {
     chat_id: process.env.CHANNEL_CHAT_ID,
     text: message,
+    parse_mode: "HTML",
   };
 
   try {
