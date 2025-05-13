@@ -1,9 +1,6 @@
 import { Bot, BotType, ActivityLog, BotStatus } from "./bot.js";
 import { getDriftClient } from "./drift.js";
-import {
-  getHedgePerpsPositions,
-  calculateIdealDeltaNeutralHedge,
-} from "./hedge.js";
+import { calculateIdealDeltaNeutralHedge } from "./hedge.js";
 import { Position, HedgePositions, SpotBalance, PerpBalance } from "./types.js";
 import { DriftPerpsMarketIndexes } from "./constants.js";
 import { getAccountPortfolio } from "./portfolio.js";

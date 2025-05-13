@@ -45,6 +45,7 @@ export async function getAccountPortfolio(): Promise<any> {
   const perpBalances = user.getUserAccount().perpPositions.map((pos) => ({
     marketIndex: pos.marketIndex,
     baseAssetAmount: pos.baseAssetAmount / 1e9,
+    quoteAssetAmount: Number(pos.quoteAssetAmount) / 1e6, // Quote asset is in 1e6
   }));
 
   return transformPortfolioData({ spotBalances, perpBalances });
@@ -98,17 +99,78 @@ export async function transformPortfolioData(portfolio: any) {
           new BN(1e6)
         );
 
+        // Check if position is short based on negative quoteAssetAmount
+        const isShort = pos.quoteAssetAmount < 0;
+        const baseAssetAmount = isShort
+          ? -Math.abs(pos.baseAssetAmount)
+          : Math.abs(pos.baseAssetAmount);
+        const usdValue = baseAssetAmount * price;
+
         return {
           symbol: market?.symbol || `Unknown-${pos.marketIndex}`,
-          baseAssetAmount: pos.baseAssetAmount,
+          baseAssetAmount,
           price,
-          usdValue: pos.baseAssetAmount * price,
+          usdValue,
+          isShort,
         };
       })
   );
 
   return {
     spotBalances: transformedSpotBalances,
+    perpBalances: transformedPerpBalances,
+  };
+}
+
+export async function getHedgePerpsPositions(): Promise<any> {
+  const driftClient = await getDriftClient();
+  const user = driftClient.getUser();
+
+  // Get raw positions first to check the sign
+  const rawPositions = user.getUserAccount().perpPositions;
+
+  const perpPositions = rawPositions.map((pos) => ({
+    marketIndex: pos.marketIndex,
+    baseAssetAmount: Number(pos.baseAssetAmount) / 1e9,
+    quoteAssetAmount: Number(pos.quoteAssetAmount) / 1e6, // Quote asset is in 1e6
+  }));
+
+  const perpMarkets = MainnetPerpMarkets.reduce((acc, market) => {
+    acc[market.marketIndex] = market;
+    return acc;
+  }, {} as Record<number, any>);
+
+  const transformedPerpBalances = await Promise.all(
+    perpPositions
+      .filter((pos) => pos.baseAssetAmount !== 0)
+      .map(async (pos) => {
+        const market = perpMarkets[pos.marketIndex];
+        const perpMarketAccount = driftClient.getPerpMarketAccount(
+          pos.marketIndex
+        );
+        const price = convertToNumber(
+          perpMarketAccount?.amm.historicalOracleData.lastOraclePrice,
+          new BN(1e6)
+        );
+
+        // Check if position is short based on negative quoteAssetAmount
+        const isShort = pos.quoteAssetAmount < 0;
+        const baseAssetAmount = isShort
+          ? -Math.abs(pos.baseAssetAmount)
+          : Math.abs(pos.baseAssetAmount);
+        const usdValue = baseAssetAmount * price;
+
+        return {
+          symbol: market?.symbol || `Unknown-${pos.marketIndex}`,
+          baseAssetAmount,
+          price,
+          usdValue,
+          isShort,
+        };
+      })
+  );
+
+  return {
     perpBalances: transformedPerpBalances,
   };
 }

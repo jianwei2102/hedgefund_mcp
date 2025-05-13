@@ -9,68 +9,6 @@ import {
   MainnetPerpMarkets,
 } from "@drift-labs/sdk";
 
-export async function getHedgePerpsPositions(): Promise<HedgePositions> {
-  const driftClient = await getDriftClient();
-  const hedgePositions: HedgePositions = {
-    SOL: {
-      amount: 0,
-      usdValue: 0,
-    },
-    ETH: {
-      amount: 0,
-      usdValue: 0,
-    },
-    BTC: {
-      amount: 0,
-      usdValue: 0,
-    },
-  };
-
-  const solanaPos = driftClient
-    .getUser()
-    .getSpotPosition(DriftPerpsMarketIndexes.SOL);
-  if (solanaPos) {
-    hedgePositions.SOL.amount = solanaPos.scaledBalance.toNumber() / 1e9;
-    hedgePositions.SOL.usdValue =
-      (solanaPos.scaledBalance.toNumber() / 1e9) *
-      convertToNumber(
-        driftClient.getSpotMarketAccount(DriftPerpsMarketIndexes.SOL)
-          ?.historicalIndexData.lastIndexBidPrice,
-        new BN(1e6)
-      );
-  }
-
-  const ethPos = driftClient
-    .getUser()
-    .getSpotPosition(DriftPerpsMarketIndexes.ETH);
-  if (ethPos) {
-    hedgePositions.ETH.amount = ethPos.scaledBalance.toNumber() / 1e9;
-    hedgePositions.ETH.usdValue =
-      (ethPos.scaledBalance.toNumber() / 1e9) *
-      convertToNumber(
-        driftClient.getSpotMarketAccount(DriftPerpsMarketIndexes.ETH)
-          ?.historicalIndexData.lastIndexBidPrice,
-        new BN(1e6)
-      );
-  }
-
-  const btcPos = driftClient
-    .getUser()
-    .getSpotPosition(DriftPerpsMarketIndexes.BTC);
-  if (btcPos) {
-    hedgePositions.BTC.amount = btcPos.scaledBalance.toNumber() / 1e9;
-    hedgePositions.BTC.usdValue =
-      (btcPos.scaledBalance.toNumber() / 1e9) *
-      convertToNumber(
-        driftClient.getSpotMarketAccount(DriftPerpsMarketIndexes.BTC)
-          ?.historicalIndexData.lastIndexBidPrice,
-        new BN(1e6)
-      );
-  }
-
-  return hedgePositions;
-}
-
 export async function calculateIdealDeltaNeutralHedge(
   jlpPosition: Position
 ): Promise<HedgePositions> {

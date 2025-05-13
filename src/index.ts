@@ -3,11 +3,12 @@ import "dotenv/config.js";
 import { subscribeDriftClient } from "./drift.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { calculateIdealDeltaNeutralHedge } from "./hedge.js";
 import {
-  calculateIdealDeltaNeutralHedge,
+  getAccountPortfolio,
   getHedgePerpsPositions,
-} from "./hedge.js";
-import { getAccountPortfolio, getJLPPosition } from "./portfolio.js";
+  getJLPPosition,
+} from "./portfolio.js";
 import { z } from "zod";
 import { botManager, BotType } from "./bot.js";
 import { sendTelegramMessage } from "./telegram.js";
@@ -19,9 +20,16 @@ const server = new McpServer({
 
 await subscribeDriftClient();
 
-server.tool("getJlpPosition", "Get JLP position from Drift", {}, async ({}) => {
-  const positions = await getJLPPosition();
-  return { content: [{ type: "text", text: JSON.stringify(positions) }] };
+server.tool("listBots", "List all bots", {}, async ({}) => {
+  const bots = botManager.listBots();
+  return {
+    content: [
+      {
+        type: "text",
+        text: `List of bots: ${JSON.stringify(bots)}`,
+      },
+    ],
+  };
 });
 
 server.tool(
@@ -33,6 +41,11 @@ server.tool(
     return { content: [{ type: "text", text: JSON.stringify(positions) }] };
   }
 );
+
+server.tool("getJlpPosition", "Get JLP position from Drift", {}, async ({}) => {
+  const positions = await getJLPPosition();
+  return { content: [{ type: "text", text: JSON.stringify(positions) }] };
+});
 
 server.tool(
   "getHedgePositions",
@@ -62,7 +75,7 @@ server.tool(
 
 server.tool(
   "createNewBot",
-  "Create a new Hedging bot",
+  "Create a new Hedging bot to extract token position, calculated ideal perp position and hedge it",
   {
     type: z.enum(["JLP", "TRUMP"]).describe("Type of bot to create"),
     intervalHours: z
@@ -94,18 +107,6 @@ server.tool(
     };
   }
 );
-
-server.tool("listBots", "List all bots", {}, async ({}) => {
-  const bots = botManager.listBots();
-  return {
-    content: [
-      {
-        type: "text",
-        text: `List of bots: ${JSON.stringify(bots)}`,
-      },
-    ],
-  };
-});
 
 server.tool("sendTGMessage", "Send a message to Telegram", {}, async ({}) => {
   const messages = [
