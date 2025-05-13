@@ -6,7 +6,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { calculateIdealDeltaNeutralHedge } from "./hedge.js";
 import {
   getAccountPortfolio,
-  getHedgePerpsPositions,
+  getPerpsPositions,
   getJLPPosition,
 } from "./portfolio.js";
 import { z } from "zod";
@@ -31,47 +31,6 @@ server.tool("listBots", "List all bots", {}, async ({}) => {
     ],
   };
 });
-
-server.tool(
-  "getAccountPortfolio",
-  "Get account portfolio from Drift",
-  {},
-  async ({}) => {
-    const positions = await getAccountPortfolio();
-    return { content: [{ type: "text", text: JSON.stringify(positions) }] };
-  }
-);
-
-server.tool("getJlpPosition", "Get JLP position from Drift", {}, async ({}) => {
-  const positions = await getJLPPosition();
-  return { content: [{ type: "text", text: JSON.stringify(positions) }] };
-});
-
-server.tool(
-  "getHedgePositions",
-  "Get hedge positions from Drift",
-  {},
-  async ({}) => {
-    const hedgePositions = await getHedgePerpsPositions();
-    return {
-      content: [{ type: "text", text: JSON.stringify(hedgePositions) }],
-    };
-  }
-);
-
-server.tool(
-  "calculateIdealDeltaNeutralHedge",
-  "Get ideal delta neutral hedge positions. JLP position is made up of 47% SOL, 8% ETH, 13% BTC. In order for \
-  the JLP position to be delta neutral, we need to hedge the JLP position with the same amount of SOL, ETH and BTC. ",
-  {},
-  async ({}) => {
-    const jlpPosition = await getJLPPosition();
-    const hedgePositions = await calculateIdealDeltaNeutralHedge(jlpPosition);
-    return {
-      content: [{ type: "text", text: JSON.stringify(hedgePositions) }],
-    };
-  }
-);
 
 server.tool(
   "createNewBot",
@@ -108,6 +67,47 @@ server.tool(
   }
 );
 
+server.tool(
+  "getAccountPortfolio",
+  "Get account portfolio from Drift",
+  {},
+  async ({}) => {
+    const positions = await getAccountPortfolio();
+    return { content: [{ type: "text", text: JSON.stringify(positions) }] };
+  }
+);
+
+server.tool("getJlpPosition", "Get JLP position from Drift", {}, async ({}) => {
+  const positions = await getJLPPosition();
+  return { content: [{ type: "text", text: JSON.stringify(positions) }] };
+});
+
+server.tool(
+  "getPerpsPositions",
+  "Get Perpetual positions from Drift",
+  {},
+  async ({}) => {
+    const hedgePositions = await getPerpsPositions();
+    return {
+      content: [{ type: "text", text: JSON.stringify(hedgePositions) }],
+    };
+  }
+);
+
+server.tool(
+  "calculateIdealDeltaNeutralHedge",
+  "Get ideal delta neutral hedge positions. JLP position is made up of 47% SOL, 8% ETH, 13% BTC. In order for \
+  the JLP position to be delta neutral, we need to hedge the JLP position with the same amount of SOL, ETH and BTC. ",
+  {},
+  async ({}) => {
+    const jlpPosition = await getJLPPosition();
+    const hedgePositions = await calculateIdealDeltaNeutralHedge(jlpPosition);
+    return {
+      content: [{ type: "text", text: JSON.stringify(hedgePositions) }],
+    };
+  }
+);
+
 server.tool("sendTGMessage", "Send a message to Telegram", {}, async ({}) => {
   const messages = [
     "🚀 New trading opportunity spotted!",
@@ -131,8 +131,3 @@ server.tool("sendTGMessage", "Send a message to Telegram", {}, async ({}) => {
 const transport = new StdioServerTransport();
 botManager.monitorBots();
 server.connect(transport);
-
-// server.tool("placeSpotOrder", "Place a spot order on Drift", {}, async ({}) => {
-//   const positions = await placeMarketOrder(1, "short", 0.1);
-//   return { content: [{ type: "text", text: JSON.stringify(positions) }] };
-// });

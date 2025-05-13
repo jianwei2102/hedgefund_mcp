@@ -3,7 +3,7 @@ import { depositJLPToken, subscribeDriftClient } from "./drift.js";
 import { placePerpMarketOrder, swapTokenToJLP } from "./order.js";
 import {
   getAccountPortfolio,
-  getHedgePerpsPositions,
+  getPerpsPositions,
   getJLPPosition,
 } from "./portfolio.js";
 import { sendTelegramMessage } from "./telegram.js";
@@ -72,7 +72,7 @@ export async function depositJLP() {
 
 export async function getHedgePositions() {
   try {
-    const hedgePositions = await getHedgePerpsPositions();
+    const hedgePositions = await getPerpsPositions();
     console.log("Hedge positions retrieved successfully:", hedgePositions);
   } catch (error) {
     console.error("Failed to get hedge positions:", error);

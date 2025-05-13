@@ -122,7 +122,7 @@ export async function transformPortfolioData(portfolio: any) {
   };
 }
 
-export async function getHedgePerpsPositions(): Promise<any> {
+export async function getPerpsPositions(): Promise<any> {
   const driftClient = await getDriftClient();
   const user = driftClient.getUser();
 
