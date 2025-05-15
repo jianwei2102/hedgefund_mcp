@@ -2,8 +2,8 @@
 
 HedgeGuard is an AI-powered bot manager designed to help users protect their crypto portfolio by creating and managing delta-neutral hedging strategies on the Solana blockchain, primarily interacting with the Drift Protocol. It leverages the Model Context Protocol (MCP) to allow users to interact with the bot using natural language queries via Claude Desktop.
 
-**Pitch Video:** [Link to your pitch video will go here]
-**Twitter:** [Link to your Twitter page will go here]
+**Pitch Video:** https://youtu.be/4zYZq4AS4MM
+**Twitter:** https://x.com/HedgeGuard1/status/1923014334101262557
 
 ## What it Does
 
